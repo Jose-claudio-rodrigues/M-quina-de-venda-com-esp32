@@ -1,0 +1,668 @@
+#include <Arduino.h>
+#include <MFRC522.h>
+#include <SPI.h>
+#include <LiquidCrystal_I2C.h>
+#include "UbidotsEsp32Mqtt.h"
+
+#define botao1 4
+#define botao2 26
+#define botao3 25
+#define botao4 19
+#define ledVermelho 15
+#define ledVerde 2
+#define ledAmarelo 32
+#define buzzer 13
+
+//definies 
+#define endereco 0x27
+#define colunas 16
+#define linha 2
+
+int estadoBotao1;
+int estadoBotao2;
+int estadoBotao3;
+int estadoBotao4;
+
+#define SS_PIN 5
+#define RST_PIN 27 
+
+LiquidCrystal_I2C lcd(endereco,colunas,linha);
+MFRC522 rfid(SS_PIN, RST_PIN); 
+
+float saldo = 0,
+    card1 = 10,
+    card2 = 12;
+
+int quant_produto1 = 8,
+    quant_produto2 = 8,
+    quant_produto3 = 10;    
+    
+int itens_disponivel_1 = 0, 
+    itens_disponivel_2 = 0,
+    itens_disponivel_3 = 0;
+     
+
+int valor_Produto1 = 8,
+    valor_Produto2 = 8,
+    valor_Produto3 = 8;
+
+float valor1 = 2,
+    valor2 = 3,
+    valor3 = 4;
+
+
+void setup() {
+
+pinMode(botao1, INPUT);
+pinMode(botao2, INPUT);
+pinMode(botao3, INPUT);
+pinMode(botao4, INPUT);
+pinMode(buzzer, OUTPUT);
+pinMode(ledVermelho, OUTPUT);
+pinMode(ledVerde, OUTPUT);
+pinMode(ledAmarelo, OUTPUT);
+//pinMode(led, HIGH);
+ 
+Serial.begin(9600);
+lcd.init(); // Inicializando o LCD
+lcd.backlight(); // Ligando o BackLight do LCD
+//lcd.print("Hello, world!");
+lcd.clear();
+
+lcd.print("Maquina venda");
+delay(1000);
+lcd.setCursor(0,1);
+lcd.print("Bem-Vindo");
+delay(1000);
+
+lcd.backlight();
+delay(500);
+lcd.backlight();
+delay(500);
+
+
+lcd.clear();
+SPI.begin(); // Inicia SPI bus
+rfid.PCD_Init(); // Inicia MFRC522
+}
+
+void lerRFID1(){
+
+   if (! rfid.PICC_IsNewCardPresent( ) )    return;            /*Se não houver leitura de novo cartão, reinicia loop*/       
+    if (! rfid.PICC_ReadCardSerial  ( ) )    return;            /*Se não houver leitura de cartão na //Serial, reinicia loop*/  
+
+String conteudo = "";  
+byte letra;                                            /*Cria variável String nula*/
+    for (byte i = 0; i < rfid.uid.size; i++) 
+{
+Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
+Serial.print(rfid.uid.uidByte[i], HEX);
+conteudo.concat(String(rfid.uid.uidByte[i] < 0x10 ? " 0" : " "));
+conteudo.concat(String(rfid.uid.uidByte[i], HEX));
+}
+
+Serial.println();
+Serial.print("Mensagem : ");
+conteudo.toUpperCase();
+if (conteudo.substring(1) == "80 64 CF 12") //UID 1 - Cartao
+{                           
+  //saldo = 2;                                           /*Atualiza variável saldo para valor de card_1*/
+  lcd.clear();
+  lcd.setCursor(5,0);
+  lcd.print("SALDO");
+  Serial.println("SALDO");
+  Serial.println(card1);
+  lcd.setCursor(4,1);
+  lcd.print("R$");
+  lcd.setCursor(7,1);
+  lcd.print(card1);
+  delay(3000);  
+   
+   
+ 
+
+if(valor1 <= card1 && quant_produto1 > 0){
+    
+    lcd.clear();
+    Serial.println("COMPRA ACEITA");
+    lcd.print("COMPRA ACEITA");
+    Serial.println();
+    digitalWrite(buzzer, HIGH);
+    delay(200);
+    digitalWrite(buzzer, LOW);
+    digitalWrite(ledVermelho, HIGH); // desativa rele, fecha a trava solenoide
+    card1 = card1 - valor1;
+    saldo = card1;
+    quant_produto1 = quant_produto1 - 1;
+    itens_disponivel_1 = quant_produto1;
+    delay(3000); // espera 3 segundos
+    digitalWrite(ledVermelho, LOW);
+    delay(1000);
+    lcd.clear();
+    lcd.setCursor(1,0);
+    lcd.print("SALDO RESTANTE");
+    lcd.setCursor(4,1);
+    lcd.print("R$ ");
+    lcd.setCursor(7,1);
+    lcd.print(saldo);
+    delay(2000);
+    lcd.clear();
+    lcd.setCursor(5,0);
+    lcd.print("RETIRE");
+    lcd.setCursor(3,1);
+    lcd.print("SEU PRODUTO");
+    delay(3000);
+
+
+}else{
+   lcd.clear();
+   Serial.println("CREDITO INSUFICIENTE");
+   digitalWrite(buzzer, HIGH);
+   delay(600);
+   digitalWrite(buzzer, LOW);
+   lcd.print( "   CREDITO  ");
+   lcd.setCursor(0,1);
+   lcd.print("  INSUFICIENTE ");
+   Serial.println();
+   delay(3000);
+   lcd.clear();
+}                                           
+    }/*end if*/
+else if (conteudo.substring(1) == "9E CF CC 1D") //UID 2 - Cartao
+{                           
+  //saldo = 2;                                           /*Atualiza variável saldo para valor de card_1*/
+  lcd.clear();
+  lcd.setCursor(5,0);
+  lcd.print("SALDO");
+  Serial.println("SALDO");
+  Serial.println(card2);
+  lcd.setCursor(4,1);
+  lcd.print("R$");
+  lcd.setCursor(7,1);
+  lcd.print(card2);
+  delay(3000);  
+   
+   
+ 
+
+if(valor1 <= card2 && quant_produto1 > 0){
+    
+    lcd.clear();
+    Serial.println("COMPRA ACEITA");
+    lcd.print("COMPRA ACEITA");
+    Serial.println();
+    digitalWrite(buzzer, HIGH);
+    delay(200);
+    digitalWrite(buzzer, LOW);
+    digitalWrite(ledVermelho, HIGH); // desativa rele, fecha a trava solenoide
+    card2 = card2 - valor1;
+    saldo = card2;
+    quant_produto1 = quant_produto1 - 1;
+    itens_disponivel_1 = quant_produto1;
+    delay(3000); // espera 3 segundos
+    digitalWrite(ledVermelho, LOW);
+    delay(1000);
+    lcd.clear();
+    lcd.setCursor(1,0);
+    lcd.print("SALDO RESTANTE");
+    lcd.setCursor(4,1);
+    lcd.print("R$ ");
+    lcd.setCursor(7,1);
+    lcd.print(saldo);
+    delay(2000);
+    lcd.clear();
+    lcd.setCursor(5,0);
+    lcd.print("RETIRE");
+    lcd.setCursor(3,1);
+    lcd.print("SEU PRODUTO");
+    delay(3000);
+
+
+}else{
+   lcd.clear();
+   Serial.println("CREDITO INSUFICIENTE");
+   digitalWrite(buzzer, HIGH);
+   delay(600);
+   digitalWrite(buzzer, LOW);
+   lcd.print( "   CREDITO  ");
+   lcd.setCursor(0,1);
+   lcd.print("  INSUFICIENTE ");
+   Serial.println();
+   delay(3000);
+   lcd.clear();
+}                                           
+    }
+    
+else{
+   lcd.clear();
+   Serial.println("CARTAO NAO CADASTRADO");
+   lcd.setCursor(0,0);
+   lcd.print( "    CARTAO  ");
+   lcd.setCursor(0,1);
+   lcd.print("NAO CADASTRADO ");
+   digitalWrite(buzzer, HIGH);
+   delay(600);
+   digitalWrite(buzzer, LOW);
+   Serial.println();
+   delay(3000);
+   lcd.clear();
+}                  
+}
+
+void lerRFID2(){
+
+   if (! rfid.PICC_IsNewCardPresent( ) )    return;            /*Se não houver leitura de novo cartão, reinicia loop*/       
+    if (! rfid.PICC_ReadCardSerial  ( ) )    return;            /*Se não houver leitura de cartão na //Serial, reinicia loop*/  
+
+String conteudo = "";  
+byte letra;                                            /*Cria variável String nula*/
+    for (byte i = 0; i < rfid.uid.size; i++) 
+{
+Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
+Serial.print(rfid.uid.uidByte[i], HEX);
+conteudo.concat(String(rfid.uid.uidByte[i] < 0x10 ? " 0" : " "));
+conteudo.concat(String(rfid.uid.uidByte[i], HEX));
+}
+
+Serial.println();
+Serial.print("Mensagem : ");
+conteudo.toUpperCase();
+if (conteudo.substring(1) == "80 64 CF 12") //UID 1 - Cartao
+{                           
+  //saldo = 2;                                           /*Atualiza variável saldo para valor de card_1*/
+  lcd.clear();
+  lcd.setCursor(5,0);
+  lcd.print("SALDO");
+  Serial.println("SALDO");
+  Serial.println(card1);
+  lcd.setCursor(4,1);
+  lcd.print("R$");
+  lcd.setCursor(7,1);
+  lcd.print(card1);
+  delay(3000);  
+   
+   
+ 
+
+if(valor2 <= card1 && quant_produto2 > 0){
+    
+    lcd.clear();
+    Serial.println("COMPRA ACEITA");
+    lcd.print("COMPRA ACEITA");
+    Serial.println();
+    digitalWrite(buzzer, HIGH);
+    delay(200);
+    digitalWrite(buzzer, LOW);
+    digitalWrite(ledVerde, HIGH); // desativa rele, fecha a trava solenoide
+    card1 = card1 - valor2;
+    saldo = card1;
+    quant_produto2 = quant_produto1 - 1;
+    itens_disponivel_2 = quant_produto2;
+    delay(3000); // espera 3 segundos
+    digitalWrite(ledVerde, LOW);
+    delay(1000);
+    lcd.clear();
+    lcd.setCursor(1,0);
+    lcd.print("SALDO RESTANTE");
+    lcd.setCursor(4,1);
+    lcd.print("R$ ");
+    lcd.setCursor(7,1);
+    lcd.print(saldo);
+    delay(2000);
+    lcd.clear();
+    lcd.setCursor(5,0);
+    lcd.print("RETIRE");
+    lcd.setCursor(3,1);
+    lcd.print("SEU PRODUTO");
+    delay(3000);
+
+
+}else{
+   lcd.clear();
+   Serial.println("CREDITO INSUFICIENTE");
+   digitalWrite(buzzer, HIGH);
+   delay(600);
+   digitalWrite(buzzer, LOW);
+   lcd.print( "   CREDITO  ");
+   lcd.setCursor(0,1);
+   lcd.print("  INSUFICIENTE ");
+   Serial.println();
+   delay(3000);
+   lcd.clear();
+}                                           
+    }/*end if*/
+else if (conteudo.substring(1) == "9E CF CC 1D") //UID 2 - Cartao
+{                           
+  //saldo = 2;                                           /*Atualiza variável saldo para valor de card_1*/
+  lcd.clear();
+  lcd.setCursor(5,0);
+  lcd.print("SALDO");
+  Serial.println("SALDO");
+  Serial.println(card2);
+  lcd.setCursor(4,1);
+  lcd.print("R$");
+  lcd.setCursor(7,1);
+  lcd.print(card2);
+  delay(3000);  
+   
+   
+ 
+
+if(valor2 <= card2 && quant_produto2 > 0){
+    
+    lcd.clear();
+    Serial.println("COMPRA ACEITA");
+    lcd.print("COMPRA ACEITA");
+    Serial.println();
+    digitalWrite(buzzer, HIGH);
+    delay(200);
+    digitalWrite(buzzer, LOW);
+    digitalWrite(ledVerde, HIGH); // desativa rele, fecha a trava solenoide
+    card2 = card2 - valor2;
+    saldo = card2;
+    quant_produto2 = quant_produto2 - 1;
+    itens_disponivel_1 = quant_produto2;
+    delay(3000); // espera 3 segundos
+    digitalWrite(ledVerde, LOW);
+    delay(1000);
+    lcd.clear();
+    lcd.setCursor(1,0);
+    lcd.print("SALDO RESTANTE");
+    lcd.setCursor(4,1);
+    lcd.print("R$ ");
+    lcd.setCursor(7,1);
+    lcd.print(saldo);
+    delay(2000);
+    lcd.clear();
+    lcd.setCursor(5,0);
+    lcd.print("RETIRE");
+    lcd.setCursor(3,1);
+    lcd.print("SEU PRODUTO");
+    delay(3000);
+
+}else{
+   lcd.clear();
+   Serial.println("CREDITO INSUFICIENTE");
+   digitalWrite(buzzer, HIGH);
+   delay(600);
+   digitalWrite(buzzer, LOW);
+   lcd.print( "   CREDITO  ");
+   lcd.setCursor(0,1);
+   lcd.print("  INSUFICIENTE ");
+   Serial.println();
+   delay(3000);
+   lcd.clear();
+}                                           
+    }
+    
+else{
+   lcd.clear();
+   Serial.println("CARTAO NAO CADASTRADO");
+   lcd.setCursor(0,0);
+   lcd.print( "    CARTAO  ");
+   lcd.setCursor(0,1);
+   lcd.print(" NAO CADASTRADO ");
+   digitalWrite(buzzer, HIGH);
+   delay(600);
+   digitalWrite(buzzer, LOW);
+   Serial.println();
+   delay(3000);
+   lcd.clear();
+}                  
+}
+
+void lerRFID3(){
+
+   if (! rfid.PICC_IsNewCardPresent( ) )    return;            /*Se não houver leitura de novo cartão, reinicia loop*/       
+    if (! rfid.PICC_ReadCardSerial  ( ) )    return;            /*Se não houver leitura de cartão na //Serial, reinicia loop*/  
+
+String conteudo = "";  
+byte letra;                                            /*Cria variável String nula*/
+    for (byte i = 0; i < rfid.uid.size; i++) 
+{
+Serial.print(rfid.uid.uidByte[i] < 0x10 ? " 0" : " ");
+Serial.print(rfid.uid.uidByte[i], HEX);
+conteudo.concat(String(rfid.uid.uidByte[i] < 0x10 ? " 0" : " "));
+conteudo.concat(String(rfid.uid.uidByte[i], HEX));
+}
+
+Serial.println();
+Serial.print("Mensagem : ");
+conteudo.toUpperCase();
+if (conteudo.substring(1) == "80 64 CF 12") //UID 1 - Cartao
+{                           
+  //saldo = 2;                                           /*Atualiza variável saldo para valor de card_1*/
+  lcd.clear();
+  lcd.setCursor(5,0);
+  lcd.print("SALDO");
+  Serial.println("SALDO");
+  Serial.println(card1);
+  lcd.setCursor(4,1);
+  lcd.print("R$");
+  lcd.setCursor(7,1);
+  lcd.print(card1);
+  delay(3000);  
+   
+   
+ 
+
+if(valor3 <= card1 && quant_produto3 > 0){
+    
+    lcd.clear();
+    Serial.println("COMPRA ACEITA");
+    lcd.print("COMPRA ACEITA");
+    Serial.println();
+    digitalWrite(buzzer, HIGH);
+    delay(200);
+    digitalWrite(buzzer, LOW);
+    digitalWrite(ledAmarelo, HIGH); // desativa rele, fecha a trava solenoide
+    card1 = card1 - valor3;
+    saldo = card1;
+    quant_produto3 = quant_produto1 - 1;
+    itens_disponivel_3 = quant_produto3;
+    delay(3000); // espera 3 segundos
+    digitalWrite(ledAmarelo, LOW);
+    delay(1000);
+    lcd.clear();
+    lcd.setCursor(1,0);
+    lcd.print("SALDO RESTANTE");
+    lcd.setCursor(4,1);
+    lcd.print("R$ ");
+    lcd.setCursor(7,1);
+    lcd.print(saldo);
+    delay(2000);
+
+
+}else{
+   lcd.clear();
+   Serial.println("CREDITO INSUFICIENTE");
+   digitalWrite(buzzer, HIGH);
+   delay(600);
+   digitalWrite(buzzer, LOW);
+   lcd.print( "   CREDITO  ");
+   lcd.setCursor(0,1);
+   lcd.print("  INSUFICIENTE ");
+   Serial.println();
+   delay(3000);
+   lcd.clear();
+}                                           
+    }/*end if*/
+else if (conteudo.substring(1) == "9E CF CC 1D") //UID 2 - Cartao
+{                           
+  //saldo = 2;                                           /*Atualiza variável saldo para valor de card_1*/
+  lcd.clear();
+  lcd.setCursor(5,0);
+  lcd.print("SALDO");
+  Serial.println("SALDO");
+  Serial.println(card2);
+  lcd.setCursor(4,1);
+  lcd.print("R$");
+  lcd.setCursor(7,1);
+  lcd.print(card2);
+  delay(3000);  
+   
+   
+ 
+
+if(valor3 <= card2 && quant_produto3 > 0){
+    
+    lcd.clear();
+    Serial.println("COMPRA ACEITA");
+    lcd.print("COMPRA ACEITA");
+    Serial.println();
+    digitalWrite(buzzer, HIGH);
+    delay(200);
+    digitalWrite(buzzer, LOW);
+    digitalWrite(ledAmarelo, HIGH); // desativa rele, fecha a trava solenoide
+    card2 = card2 - valor3;
+    saldo = card2;
+    quant_produto3 = quant_produto3 - 1;
+    itens_disponivel_3 = quant_produto3;
+    delay(3000); // espera 3 segundos
+    digitalWrite(ledVerde, LOW);
+    delay(1000);
+    lcd.clear();
+    lcd.setCursor(1,0);
+    lcd.print("SALDO RESTANTE");
+    lcd.setCursor(4,1);
+    lcd.print("R$ ");
+    lcd.setCursor(7,1);
+    lcd.print(saldo);
+    delay(2000);
+
+
+}else{
+   lcd.clear();
+   Serial.println("CREDITO INSUFICIENTE");
+   digitalWrite(buzzer, HIGH);
+   delay(600);
+   digitalWrite(buzzer, LOW);
+   lcd.print( "   CREDITO  ");
+   lcd.setCursor(0,1);
+   lcd.print("  INSUFICIENTE ");
+   Serial.println();
+   delay(3000);
+   lcd.clear();
+}                                           
+    }
+    
+else{
+   lcd.clear();
+   Serial.println("CARTAO NAO CADASTRADO");
+   lcd.setCursor(0,0);
+   lcd.print( "    CARTAO  ");
+   lcd.setCursor(0,1);
+   lcd.print(" NAO CADASTRADO ");
+   digitalWrite(buzzer, HIGH);
+   delay(600);
+   digitalWrite(buzzer, LOW);
+   Serial.println();
+   delay(3000);
+   lcd.clear();
+}                  
+}
+
+void loop() {
+
+int opcao=0;
+estadoBotao1 = digitalRead(botao1);
+estadoBotao2 = digitalRead(botao2);
+estadoBotao3 = digitalRead(botao3);
+opcao+=(estadoBotao1)?1:0;
+opcao+=(estadoBotao2)?10:0;
+opcao+=(estadoBotao3)?100:0;
+opcao+=(estadoBotao4)?110:0;
+//Serial.println(opcao);
+//lerRFID();
+switch (opcao)
+{
+case 1: 
+lcd.clear();
+lcd.print("******AGUA******");
+delay(3000);
+
+lcd.clear();
+lcd.setCursor(2,0);
+lcd.print("VALOR PRODUTO ");
+lcd.setCursor(4,1);
+lcd.print("R$ ");
+lcd.setCursor(7,1);
+lcd.print(valor1);
+delay(3000);
+lcd.clear();
+lcd.setCursor(1,0);
+lcd.print("QUANT.DISPONIVEL");
+lcd.setCursor(5,1);
+lcd.print(quant_produto1);
+delay(2000);
+lcd.clear();
+lcd.println("APROXIME CARTAO");
+delay(3000);
+lerRFID1();
+break;
+
+case 10:
+lcd.clear();
+lcd.print("*****LEITE******");
+Serial.print("APROXIME O CARTAO");
+delay(3000);
+lcd.clear();
+lcd.setCursor(2,0);
+lcd.print("VALOR PRODUTO ");
+lcd.setCursor(4,1);
+lcd.print("R$ ");
+lcd.setCursor(7,1);
+lcd.print(valor2);
+delay(3000);
+lcd.clear();
+lcd.setCursor(1,0);
+lcd.print("QUANT.DISPONIVEL");
+lcd.setCursor(5,1);
+lcd.print(quant_produto2);
+delay(2000);
+lcd.clear();
+lcd.println("APROXIME CARTAO");
+Serial.print("APROXIME O CARTAO");
+delay(3000);
+lerRFID2();
+ 
+break;
+
+case 100:
+lcd.clear();
+lcd.print("******CAFE******");
+delay(3000);
+
+lcd.clear();
+lcd.setCursor(2,0);
+lcd.print("VALOR PRODUTO ");
+lcd.setCursor(4,1);
+lcd.print("R$ ");
+lcd.setCursor(7,1);
+lcd.print(valor3);
+delay(3000);
+lcd.clear();
+lcd.setCursor(1,0);
+lcd.print("QUANT.DISPONIVEL");
+lcd.setCursor(5,1);
+lcd.print(quant_produto3);
+delay(2000);
+lcd.clear();
+lcd.println("APROXIME CARTAO");
+delay(3000);
+lerRFID3();
+break;
+
+
+default: 
+lcd.clear();
+lcd.print("escolha produto");
+lcd.setCursor(0,1);
+lcd.print("Agua leite Cafe");
+Serial.println("Agua leite Cafe");
+delay(1000);
+break;
+}
+  
+}
+
